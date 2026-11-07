@@ -1,64 +1,77 @@
-﻿using Expense_Tracker_02.Data;
-using Expense_Tracker_02.Models;
-using Microsoft.EntityFrameworkCore;
+using Expense_Tracker_02.Repositories;
+using Microsoft.Extensions.Options;
 
-namespace Expense_Tracker_02.Services
+namespace Expense_Tracker_02.Services;
+
+/// <summary>
+/// REWRITTEN. Old version queried ApplicationDbContext directly, hard-coded the 80/100 thresholds
+/// inside BudgetStatus, duplicated the "spent" query in two methods, and left alert text to the controller.
+/// </summary>
+public class BudgetAlertService : IBudgetAlertService
 {
-    public class BudgetStatus
+    private readonly IBudgetRepository _budgets;
+    private readonly ITransactionRepository _transactions;
+    private readonly BudgetAlertOptions _options;
+
+    public BudgetAlertService(
+        IBudgetRepository budgets,
+        ITransactionRepository transactions,
+        IOptions<BudgetAlertOptions> options)
     {
-        public string CategoryName { get; set; } = "";
-        public decimal LimitAmount { get; set; }
-        public decimal Spent { get; set; }
-        public decimal PercentUsed => LimitAmount == 0 ? 0 : Math.Round(Spent / LimitAmount * 100, 1);
-        public bool IsNearLimit => PercentUsed is >= 80 and < 100;
-        public bool IsOverLimit => PercentUsed >= 100;
+        _budgets = budgets;
+        _transactions = transactions;
+        _options = options.Value;
     }
 
-    public class BudgetAlertService
+    public BudgetStatus Evaluate(string categoryName, decimal limitAmount, decimal spent)
     {
-        private readonly ApplicationDbContext _db;
-
-        public BudgetAlertService(ApplicationDbContext db)
+        var status = new BudgetStatus
         {
-            _db = db;
-        }
+            CategoryName = categoryName,
+            LimitAmount = limitAmount,
+            Spent = spent
+        };
 
-        // Returns spend-vs-budget status for every budget defined in the given month/year.
-        public async Task<List<BudgetStatus>> GetStatusForMonthAsync(int month, int year)
-        {
-            var budgets = await _db.Budgets
-                .Where(b => b.Month == month && b.Year == year)
-                .ToListAsync();
+        var percent = status.PercentUsed;
+        status.IsOverLimit = percent >= _options.OverLimitPercent;
+        status.IsNearLimit = !status.IsOverLimit && percent >= _options.NearLimitPercent;
+        return status;
+    }
 
-            var spendByCategory = await _db.Transactions
-                .Where(t => t.Type == TransactionType.Expense && t.Date.Month == month && t.Date.Year == year)
-                .GroupBy(t => t.CategoryName)
-                .Select(g => new { Category = g.Key, Total = g.Sum(t => t.Amount) })
-                .ToDictionaryAsync(x => x.Category, x => x.Total);
+    public async Task<List<BudgetStatus>> GetStatusForMonthAsync(int month, int year)
+    {
+        var budgets = await _budgets.GetByMonthAsync(month, year);
+        var expenses = await _transactions.GetExpensesForMonthAsync(month, year);
 
-            return budgets.Select(b => new BudgetStatus
-            {
-                CategoryName = b.CategoryName,
-                LimitAmount = b.LimitAmount,
-                Spent = spendByCategory.TryGetValue(b.CategoryName, out var total) ? total : 0m
-            }).ToList();
-        }
+        var spendByCategory = expenses
+            .GroupBy(t => t.CategoryName)
+            .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
 
-        // Single-category check, used right after a new expense is saved so we can
-        // flash an immediate alert instead of waiting for the dashboard to refresh.
-        public async Task<BudgetStatus?> CheckCategoryAsync(string categoryName, int month, int year)
-        {
-            var budget = await _db.Budgets
-                .FirstOrDefaultAsync(b => b.CategoryName == categoryName && b.Month == month && b.Year == year);
-            if (budget == null) return null;
+        return budgets
+            .Select(b => Evaluate(b.CategoryName, b.LimitAmount,
+                spendByCategory.TryGetValue(b.CategoryName, out var total) ? total : 0m))
+            .ToList();
+    }
 
-            var spent = await _db.Transactions
-                .Where(t => t.Type == TransactionType.Expense
-                    && t.CategoryName == categoryName
-                    && t.Date.Month == month && t.Date.Year == year)
-                .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+    public async Task<BudgetStatus?> CheckCategoryAsync(string categoryName, int month, int year)
+    {
+        var budget = await _budgets.FindAsync(categoryName, month, year);
+        if (budget == null) return null;
 
-            return new BudgetStatus { CategoryName = categoryName, LimitAmount = budget.LimitAmount, Spent = spent };
-        }
+        var expenses = await _transactions.GetExpensesForMonthAsync(month, year, categoryName);
+        return Evaluate(categoryName, budget.LimitAmount, expenses.Sum(t => t.Amount));
+    }
+
+    public string? BuildAlertMessage(BudgetStatus? status)
+    {
+        if (status == null) return null;
+
+        if (status.IsOverLimit)
+            return $"Over budget on {status.CategoryName}: {CurrencyHelper.Format(status.Spent)} of {CurrencyHelper.Format(status.LimitAmount)} spent.";
+
+        if (status.IsNearLimit)
+            return $"Nearing budget on {status.CategoryName}: {status.PercentUsed}% used.";
+
+        return null;
     }
 }
