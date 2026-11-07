@@ -12,7 +12,7 @@ namespace Expense_Tracker_02.Models
         public string CategoryName { get; set; } = Category.All[0];
 
         [Required]
-        [Range(1, int.MaxValue)]
+        [Range(1, 12, ErrorMessage = "Month must be between 1 and 12.")]
         public int Month { get; set; } = DateTime.Today.Month;
 
         [Required]
