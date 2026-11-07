@@ -4,7 +4,7 @@
 }
 
 <h2>Delete Transaction?</h2>
-<p>@Model.Date.ToShortDateString() — @Model.Type — @Model.CategoryName — @Model.Amount.ToString("C")</p>
+<p>@Model.Date.ToShortDateString() — @Model.Type — @Model.CategoryName — @CurrencyHelper.Format(Model.Amount)</p>
 
 <form asp-action="Delete" method="post">
     <input type="hidden" asp-for="Id" />

@@ -1,17 +1,15 @@
-﻿using Expense_Tracker_02.Data;
-using Expense_Tracker_02.Models;
+﻿using Expense_Tracker_02.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Expense_Tracker_02.Controllers
 {
     public class ReportsController : Controller
     {
-        private readonly ApplicationDbContext _db;
+        private readonly IReportService _reports;
 
-        public ReportsController(ApplicationDbContext db)
+        public ReportsController(IReportService reports)
         {
-            _db = db;
+            _reports = reports;
         }
 
         public async Task<IActionResult> Index(int? month, int? year)
@@ -21,34 +19,13 @@ namespace Expense_Tracker_02.Controllers
             ViewBag.Month = m;
             ViewBag.Year = y;
 
-            var expensesByCategory = await _db.Transactions
-                .Where(t => t.Type == TransactionType.Expense && t.Date.Month == m && t.Date.Year == y)
-                .GroupBy(t => t.CategoryName)
-                .Select(g => new { Category = g.Key, Total = g.Sum(t => t.Amount) })
-                .OrderByDescending(x => x.Total)
-                .ToListAsync();
+            var report = await _reports.GetMonthlyReportAsync(m, y);
 
-            // Last 6 months trend (income vs expense), for the line chart.
-            var sixMonthsAgo = new DateTime(y, m, 1).AddMonths(-5);
-            var monthlyTrend = await _db.Transactions
-                .Where(t => t.Date >= sixMonthsAgo)
-                .GroupBy(t => new { t.Date.Year, t.Date.Month, t.Type })
-                .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Type, Total = g.Sum(t => t.Amount) })
-                .ToListAsync();
-
-            ViewBag.CategoryLabels = expensesByCategory.Select(x => x.Category).ToArray();
-            ViewBag.CategoryTotals = expensesByCategory.Select(x => x.Total).ToArray();
-
-            var months = Enumerable.Range(0, 6)
-                .Select(i => sixMonthsAgo.AddMonths(i))
-                .ToList();
-            ViewBag.TrendLabels = months.Select(dt => dt.ToString("MMM yyyy")).ToArray();
-            ViewBag.TrendIncome = months
-                .Select(dt => monthlyTrend.Where(x => x.Year == dt.Year && x.Month == dt.Month && x.Type == TransactionType.Income).Sum(x => x.Total))
-                .ToArray();
-            ViewBag.TrendExpense = months
-                .Select(dt => monthlyTrend.Where(x => x.Year == dt.Year && x.Month == dt.Month && x.Type == TransactionType.Expense).Sum(x => x.Total))
-                .ToArray();
+            ViewBag.CategoryLabels = report.CategoryLabels;
+            ViewBag.CategoryTotals = report.CategoryTotals;
+            ViewBag.TrendLabels = report.TrendLabels;
+            ViewBag.TrendIncome = report.TrendIncome;
+            ViewBag.TrendExpense = report.TrendExpense;
 
             return View();
         }

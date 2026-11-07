@@ -1,20 +1,16 @@
-﻿using Expense_Tracker_02.Data;
-using Expense_Tracker_02.Models;
+﻿using Expense_Tracker_02.Models;
 using Expense_Tracker_02.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Expense_Tracker_02.Controllers
 {
     public class BudgetsController : Controller
     {
-        private readonly ApplicationDbContext _db;
-        private readonly BudgetAlertService _budgetAlerts;
+        private readonly IBudgetService _budgets;
 
-        public BudgetsController(ApplicationDbContext db, BudgetAlertService budgetAlerts)
+        public BudgetsController(IBudgetService budgets)
         {
-            _db = db;
-            _budgetAlerts = budgetAlerts;
+            _budgets = budgets;
         }
 
         public async Task<IActionResult> Index(int? month, int? year)
@@ -25,7 +21,7 @@ namespace Expense_Tracker_02.Controllers
             ViewBag.Month = m;
             ViewBag.Year = y;
 
-            return View(await _budgetAlerts.GetStatusForMonthAsync(m, y));
+            return View(await _budgets.GetStatusForMonthAsync(m, y));
         }
 
         public IActionResult Create()
@@ -38,25 +34,22 @@ namespace Expense_Tracker_02.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Budget budget)
         {
-            bool exists = await _db.Budgets.AnyAsync(b =>
-                b.CategoryName == budget.CategoryName && b.Month == budget.Month && b.Year == budget.Year);
-            if (exists)
-                ModelState.AddModelError("", "A budget for this category and month already exists — edit it instead.");
-
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                ViewBag.Categories = Category.All;
-                return View(budget);
+                var result = await _budgets.CreateAsync(budget);
+                if (result.Succeeded)
+                    return RedirectToAction(nameof(Index), new { month = budget.Month, year = budget.Year });
+
+                ModelState.AddModelError("", result.Error!);
             }
 
-            _db.Add(budget);
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Index), new { month = budget.Month, year = budget.Year });
+            ViewBag.Categories = Category.All;
+            return View(budget);
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            var budget = await _db.Budgets.FindAsync(id);
+            var budget = await _budgets.GetByIdAsync(id);
             if (budget == null) return NotFound();
             ViewBag.Categories = Category.All;
             return View(budget);
@@ -67,27 +60,25 @@ namespace Expense_Tracker_02.Controllers
         public async Task<IActionResult> Edit(int id, Budget budget)
         {
             if (id != budget.Id) return NotFound();
-            if (!ModelState.IsValid)
+
+            if (ModelState.IsValid)
             {
-                ViewBag.Categories = Category.All;
-                return View(budget);
+                var result = await _budgets.UpdateAsync(budget);
+                if (result.Succeeded)
+                    return RedirectToAction(nameof(Index), new { month = budget.Month, year = budget.Year });
+
+                ModelState.AddModelError("", result.Error!);
             }
 
-            _db.Update(budget);
-            await _db.SaveChangesAsync();
-            return RedirectToAction(nameof(Index), new { month = budget.Month, year = budget.Year });
+            ViewBag.Categories = Category.All;
+            return View(budget);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var budget = await _db.Budgets.FindAsync(id);
-            if (budget != null)
-            {
-                _db.Budgets.Remove(budget);
-                await _db.SaveChangesAsync();
-            }
+            await _budgets.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
         }
     }
