@@ -1,0 +1,14 @@
+﻿@{ ViewBag.Title = "Import CSV"; }
+
+<h2>Import Transactions from CSV</h2>
+<p class="text-muted">Expected columns: Type (Income/Expense), Amount, Category, Date, Note</p>
+
+<div asp-validation-summary="All" class="text-danger"></div>
+
+<form asp-action="ImportCsv" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <input type="file" name="file" accept=".csv" class="form-control" required />
+    </div>
+    <button class="btn btn-primary" type="submit">Import</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>

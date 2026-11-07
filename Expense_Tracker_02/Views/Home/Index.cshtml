@@ -1,0 +1,68 @@
+﻿@using Expense_Tracker_02.Services
+@{
+    ViewBag.Title = "Dashboard";
+    var income = (decimal)ViewBag.TotalIncome;
+    var expense = (decimal)ViewBag.TotalExpense;
+    var recent = (List<Transaction>)ViewBag.RecentTransactions;
+    var statuses = (List<BudgetStatus>)ViewBag.BudgetStatuses;
+}
+
+<h2>Dashboard — @DateTime.Today.ToString("MMMM yyyy")</h2>
+
+<div class="row my-3">
+    <div class="col-md-4">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Income</h6>
+            <h3 class="text-success">@CurrencyHelper.Format(income)</h3>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Expenses</h6>
+            <h3 class="text-danger">@CurrencyHelper.Format(expense)</h3>
+        </div></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Net</h6>
+            <h3>@CurrencyHelper.Format(income - expense)</h3>
+        </div></div>
+    </div>
+</div>
+
+<h5>Budget status</h5>
+@if (!statuses.Any())
+{
+    <p class="text-muted">No budgets set for this month. <a asp-controller="Budgets" asp-action="Create">Create one</a>.</p>
+}
+else
+{
+    foreach (var s in statuses)
+    {
+        var barClass = s.IsOverLimit ? "bg-danger" : s.IsNearLimit ? "bg-warning" : "bg-success";
+        <div class="mb-2">
+            <div class="d-flex justify-content-between"><span>@s.CategoryName</span><span>@CurrencyHelper.Format(s.Spent) / @CurrencyHelper.Format(s.LimitAmount)</span></div>
+            <div class="progress">
+                <div class="progress-bar @barClass" style="width:@(Math.Min(s.PercentUsed, 100))%"></div>
+            </div>
+        </div>  
+    }
+}
+
+<h5 class="mt-4">Recent transactions</h5>
+<table class="table table-sm">
+    <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th></tr></thead>
+    <tbody>
+    @foreach (var t in recent)
+    {
+        <tr>
+            <td>@t.Date.ToShortDateString()</td>
+            <td>@t.Type</td>
+            <td>@t.CategoryName</td>        
+            <td>@CurrencyHelper.Format(t.Amount)</td>
+            <td>@t.Note</td>
+        </tr>
+    }
+    </tbody>
+</table>
+<a class="btn btn-primary" asp-controller="Transactions" asp-action="Create">Add Transaction</a>

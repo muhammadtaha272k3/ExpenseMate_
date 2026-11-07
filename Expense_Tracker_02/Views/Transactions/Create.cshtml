@@ -1,0 +1,42 @@
+﻿@model Transaction
+@{
+    ViewBag.Title = "Add Transaction";
+    var categories = (string[])ViewBag.Categories;
+}
+
+<h2>Add Transaction</h2>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label class="form-label">Type</label>
+        <select asp-for="Type" class="form-select">
+            <option value="Expense">Expense</option>
+            <option value="Income">Income</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input asp-for="Amount" class="form-control" step="0.01" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select asp-for="CategoryName" class="form-select">
+            @foreach (var c in categories)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Date</label>
+        <input asp-for="Date" class="form-control" type="date" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Note</label>
+        <input asp-for="Note" class="form-control" />
+    </div>
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>

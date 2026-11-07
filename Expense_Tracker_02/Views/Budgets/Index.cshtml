@@ -1,0 +1,43 @@
+﻿@using Expense_Tracker_02.Services
+@model List<BudgetStatus>
+@{
+    ViewBag.Title = "Budgets";
+    int month = (int)ViewBag.Month;
+    int year = (int)ViewBag.Year;
+}
+
+<h2>Budgets — @(new DateTime(year, month, 1).ToString("MMMM yyyy"))</h2>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <select name="month" class="form-select">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m" selected="@(m == month)">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto"><input type="number" name="year" class="form-control" value="@year" /></div>
+    <div class="col-auto"><button class="btn btn-secondary" type="submit">Go</button></div>
+</form>
+
+<a class="btn btn-primary mb-3" asp-action="Create">Add Budget</a>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No budgets set for this month yet.</p>
+}
+else
+{
+    foreach (var s in Model)
+    {
+        var barClass = s.IsOverLimit ? "bg-danger" : s.IsNearLimit ? "bg-warning" : "bg-success";
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <strong>@s.CategoryName</strong>
+                <span>@CurrencyHelper.Format(s.Spent) / @CurrencyHelper.Format(s.LimitAmount) (@s.PercentUsed%)</span>
+            </div>
+            <div class="progress"><div class="progress-bar @barClass" style="width:@(Math.Min(s.PercentUsed, 100))%"></div></div>
+        </div>
+    }
+}

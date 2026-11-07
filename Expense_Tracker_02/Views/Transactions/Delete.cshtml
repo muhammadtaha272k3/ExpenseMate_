@@ -1,0 +1,13 @@
+﻿@model Transaction
+@{
+    ViewBag.Title = "Delete Transaction";
+}
+
+<h2>Delete Transaction?</h2>
+<p>@Model.Date.ToShortDateString() — @Model.Type — @Model.CategoryName — @Model.Amount.ToString("C")</p>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button class="btn btn-danger" type="submit">Delete</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>

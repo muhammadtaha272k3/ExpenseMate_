@@ -1,0 +1,40 @@
+﻿@model Budget
+@{
+    ViewBag.Title = "Add Budget";
+    var categories = (string[])ViewBag.Categories;
+}
+
+<h2>Add Budget</h2>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="All" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select asp-for="CategoryName" class="form-select">
+            @foreach (var c in categories)
+            {
+                <option value="@c">@c</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Month</label>
+        <select asp-for="Month" class="form-select">
+            @for (int m = 1; m <= 12; m++)
+            {
+                <option value="@m">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)</option>
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Year</label>
+        <input asp-for="Year" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Limit Amount</label>
+        <input asp-for="LimitAmount" class="form-control" step="0.01" />
+    </div>
+    <button class="btn btn-primary" type="submit">Save</button>
+    <a class="btn btn-link" asp-action="Index">Cancel</a>
+</form>

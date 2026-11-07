@@ -1,0 +1,46 @@
+﻿@using System.Text.Json
+@{
+    ViewBag.Title = "Reports";
+    string[] categoryLabels = (string[])ViewBag.CategoryLabels;
+    decimal[] categoryTotals = (decimal[])ViewBag.CategoryTotals;
+    string[] trendLabels = (string[])ViewBag.TrendLabels;
+    decimal[] trendIncome = (decimal[])ViewBag.TrendIncome;
+    decimal[] trendExpense = (decimal[])ViewBag.TrendExpense;
+}
+
+<h2>Reports — @(new DateTime((int)ViewBag.Year, (int)ViewBag.Month, 1).ToString("MMMM yyyy"))</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <h5>Spend by Category</h5>
+        <canvas id="categoryChart"></canvas>
+    </div>
+    <div class="col-md-6">
+        <h5>Income vs Expense (last 6 months)</h5>
+        <canvas id="trendChart"></canvas>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'pie',
+        data: {
+            labels: @Html.Raw(JsonSerializer.Serialize(categoryLabels)),
+            datasets: [{ data: @Html.Raw(JsonSerializer.Serialize(categoryTotals)) }]
+        }
+    });
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: @Html.Raw(JsonSerializer.Serialize(trendLabels)),
+            datasets: [
+                { label: 'Income', data: @Html.Raw(JsonSerializer.Serialize(trendIncome)), borderColor: 'green', fill: false },
+                { label: 'Expense', data: @Html.Raw(JsonSerializer.Serialize(trendExpense)), borderColor: 'red', fill: false }
+            ]
+        }
+    });
+</script>
+}

@@ -1,0 +1,55 @@
+﻿@model List<Transaction>
+@{
+    ViewBag.Title = "Transactions";
+    var categories = (string[])ViewBag.Categories;
+}
+
+<h2>Transactions</h2>
+
+<form class="row g-2 mb-3" method="get">
+    <div class="col-auto">
+        <select name="category" class="form-select">
+            <option value="">All categories</option>
+            @foreach (var c in categories)
+            {
+                <option value="@c" selected="@(ViewBag.Category == c)">@c</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <select name="type" class="form-select">
+            <option value="">All types</option>
+            <option value="Income" selected="@(ViewBag.Type?.ToString() == "Income")">Income</option>
+            <option value="Expense" selected="@(ViewBag.Type?.ToString() == "Expense")">Expense</option>
+        </select>
+    </div>
+    <div class="col-auto"><input type="date" name="from" class="form-control" value="@ViewBag.From" /></div>
+    <div class="col-auto"><input type="date" name="to" class="form-control" value="@ViewBag.To" /></div>
+    <div class="col-auto"><button class="btn btn-secondary" type="submit">Filter</button></div>
+</form>
+
+<div class="mb-3">
+    <a class="btn btn-primary" asp-action="Create">Add Transaction</a>
+    <a class="btn btn-outline-secondary" asp-action="ExportCsv">Export CSV</a>
+    <a class="btn btn-outline-secondary" asp-action="ImportCsv">Import CSV</a>
+</div>
+
+<table class="table">
+    <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var t in Model)
+    {
+        <tr>
+            <td>@t.Date.ToShortDateString()</td>
+            <td>@t.Type</td>
+            <td>@t.CategoryName</td>
+            <td>@CurrencyHelper.Format(t.Amount)</td>
+            <td>@t.Note</td>
+            <td>
+                <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@t.Id">Edit</a>
+                <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@t.Id">Delete</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
