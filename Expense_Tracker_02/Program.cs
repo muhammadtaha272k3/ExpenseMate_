@@ -35,7 +35,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     // Keep EnsureCreated() until you finish the migration baseline (see README step 6),
     // then replace it with db.Database.Migrate().
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 if (!app.Environment.IsDevelopment())
