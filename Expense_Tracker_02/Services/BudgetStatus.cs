@@ -4,6 +4,7 @@ namespace Expense_Tracker_02.Services;
 // from configured thresholds instead of being hard-coded here.
 public class BudgetStatus
 {
+    public int Id { get; set; }   // budget id, so the Budgets page can link to Edit/Delete
     public string CategoryName { get; set; } = "";
     public decimal LimitAmount { get; set; }
     public decimal Spent { get; set; }

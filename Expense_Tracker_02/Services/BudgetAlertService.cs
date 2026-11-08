@@ -23,10 +23,11 @@ public class BudgetAlertService : IBudgetAlertService
         _options = options.Value;
     }
 
-    public BudgetStatus Evaluate(string categoryName, decimal limitAmount, decimal spent)
+    public BudgetStatus Evaluate(string categoryName, decimal limitAmount, decimal spent, int budgetId = 0)
     {
         var status = new BudgetStatus
         {
+            Id = budgetId,
             CategoryName = categoryName,
             LimitAmount = limitAmount,
             Spent = spent
@@ -49,7 +50,8 @@ public class BudgetAlertService : IBudgetAlertService
 
         return budgets
             .Select(b => Evaluate(b.CategoryName, b.LimitAmount,
-                spendByCategory.TryGetValue(b.CategoryName, out var total) ? total : 0m))
+                spendByCategory.TryGetValue(b.CategoryName, out var total) ? total : 0m,
+                b.Id))
             .ToList();
     }
 
@@ -59,7 +61,7 @@ public class BudgetAlertService : IBudgetAlertService
         if (budget == null) return null;
 
         var expenses = await _transactions.GetExpensesForMonthAsync(month, year, categoryName);
-        return Evaluate(categoryName, budget.LimitAmount, expenses.Sum(t => t.Amount));
+        return Evaluate(categoryName, budget.LimitAmount, expenses.Sum(t => t.Amount), budget.Id);
     }
 
     public string? BuildAlertMessage(BudgetStatus? status)

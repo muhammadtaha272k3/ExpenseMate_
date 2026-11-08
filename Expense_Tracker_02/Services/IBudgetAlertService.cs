@@ -3,7 +3,7 @@ namespace Expense_Tracker_02.Services;
 public interface IBudgetAlertService
 {
     /// <summary>Pure calculation: no database access. Applies the configured thresholds.</summary>
-    BudgetStatus Evaluate(string categoryName, decimal limitAmount, decimal spent);
+    BudgetStatus Evaluate(string categoryName, decimal limitAmount, decimal spent, int budgetId = 0);
 
     Task<List<BudgetStatus>> GetStatusForMonthAsync(int month, int year);
 

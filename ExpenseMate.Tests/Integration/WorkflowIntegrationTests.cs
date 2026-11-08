@@ -149,4 +149,32 @@ public class WorkflowIntegrationTests : IDisposable
         var only = Assert.Single(result);
         Assert.Equal("Food", only.CategoryName);
     }
+
+    // IT-10: Budget summary exposes the budget id, so the page can link to Edit/Delete
+    [Fact]
+    public async Task MonthlyBudgetSummary_CarriesBudgetId()
+    {
+        await _env.Budgets.CreateAsync(new Budget { CategoryName = "Food", Month = 11, Year = 2026, LimitAmount = 200m });
+        var saved = await _env.Db.Budgets.FirstAsync();
+
+        var statuses = await _env.Budgets.GetStatusForMonthAsync(11, 2026);
+
+        Assert.Equal(saved.Id, Assert.Single(statuses).Id);
+    }
+
+    // IT-11: Editing a budget's limit keeps one row and updates the amount
+    [Fact]
+    public async Task EditBudget_UpdatesLimit_WithoutDuplicate()
+    {
+        await _env.Budgets.CreateAsync(new Budget { CategoryName = "Food", Month = 11, Year = 2026, LimitAmount = 200m });
+        var id = (await _env.Db.Budgets.AsNoTracking().FirstAsync()).Id;
+        _env.Db.ChangeTracker.Clear(); // a real edit arrives in a new request, i.e. a new DbContext
+
+        var result = await _env.Budgets.UpdateAsync(
+            new Budget { Id = id, CategoryName = "Food", Month = 11, Year = 2026, LimitAmount = 350m });
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(1, await _env.Db.Budgets.CountAsync());
+        Assert.Equal(350m, (await _env.Db.Budgets.AsNoTracking().FirstAsync()).LimitAmount);
+    }
 }

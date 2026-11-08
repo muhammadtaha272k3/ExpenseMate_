@@ -38,6 +38,14 @@ public class BudgetAlertServiceTests
     }
 
     [Fact]
+    public void Evaluate_CarriesBudgetId()
+    {
+        var status = Create().Evaluate("Food", 100, 10, budgetId: 7);
+
+        Assert.Equal(7, status.Id);
+    }
+
+    [Fact]
     public void Evaluate_CalculatesPercentUsed()
     {
         var status = Create().Evaluate("Rent", 400, 100);
