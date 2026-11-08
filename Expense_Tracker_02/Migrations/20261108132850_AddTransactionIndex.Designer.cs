@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Expense_Tracker_02.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261108131852_AddTransactionIndex")]
+    [Migration("20261108132850_AddTransactionIndex")]
     partial class AddTransactionIndex
     {
         /// <inheritdoc />
@@ -73,6 +73,8 @@ namespace Expense_Tracker_02.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Date", "CategoryName");
 
                     b.ToTable("Transactions");
                 });

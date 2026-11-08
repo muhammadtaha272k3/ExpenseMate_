@@ -13,10 +13,12 @@ namespace Expense_Tracker_02.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-           
             modelBuilder.Entity<Budget>()
                 .HasIndex(b => new { b.CategoryName, b.Month, b.Year })
                 .IsUnique();
+
+            modelBuilder.Entity<Transaction>()
+                .HasIndex(t => new { t.Date, t.CategoryName });
         }
     }
 }

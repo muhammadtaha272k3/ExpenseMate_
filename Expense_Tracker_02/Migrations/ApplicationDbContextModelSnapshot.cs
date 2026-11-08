@@ -71,6 +71,8 @@ namespace Expense_Tracker_02.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Date", "CategoryName");
+
                     b.ToTable("Transactions");
                 });
 #pragma warning restore 612, 618
